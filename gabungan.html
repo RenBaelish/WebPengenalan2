@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mengenal Komputer & Sapa Komputermu</title>
+    <style>
+        /* --- RESET & GLOBAL STYLES --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #FCE4EC;
+            font-family: Arial, sans-serif;
+            color: #333;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: #FF6F61;
+            font-size: 2.5em;
+            margin: 20px 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #FFF9C4;
+            border: 2px solid #FF7043;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            background-color: #FF7043;
+            color: white;
+            font-size: 1em;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #E64A19;
+        }
+
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            font-size: 1em;
+            border: 1px solid #4A90E2;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .output {
+            margin-top: 20px;
+            font-size: 1.2em;
+            background-color: #FFEB3B;
+            color: #333;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .lucy-mouse {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            pointer-events: none;
+            transition: transform 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- --- MAIN CONTAINER --- -->
+    <div class="container">
+        <h1>👾 Mengenal Komputer 🎮</h1>
+        <div class="button-container">
+            <button class="btn" onclick="useKeyboard()">🖱️ Keyboard - Ketik Sesuatu</button>
+            <button class="btn" onclick="useMic()">🎤 Rekam Suara</button>
+            <button class="btn" onclick="useSpeaker()">🔊 Speaker - Dengarkan Suara</button>
+            <button class="btn" onclick="useCamera()">📸 Kamera - Ambil Foto</button>
+            <button class="btn" onclick="useMouse()">🖱️ Mouse - Klik dan Pindahkan</button>
+        </div>
+        <div id="output" class="output">Pilih salah satu untuk mulai! 💻</div>
+    </div>
+
+    <!-- --- GREETING FORM --- -->
+    <div class="container">
+        <h1>Halo! Yuk, Sapa Komputermu 🎉</h1>
+        <form id="greeting-form">
+            <label for="name" style="font-size: 1.2em; color: #4A90E2;">Masukkan sapaanmu:</label>
+            <input type="text" id="name" name="greeting" placeholder="Halo, saya [Nama]" required>
+            <button type="submit" class="btn">Kirim</button>
+        </form>
+        <h1 id="response-text" style="color: #34D399; display: none;">Tunggu sebentar...</h1>
+    </div>
+
+    <script>
+        // --- GREETING LOGIC ---
+        document.getElementById("greeting-form").addEventListener("submit", function (e) {
+            e.preventDefault();
+            const greetingInput = document.getElementById("name").value;
+
+            if (greetingInput) {
+                const name = greetingInput.split(" ").slice(-1)[0];
+                const responses = [
+                    `Hello, ${name}! Senang bertemu dengan kamu!`,
+                    `Hai ${name}, salam kenal yaa!`,
+                    `Halo ${name}, senang kenal sama kamu!`
+                ];
+                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                const responseText = document.getElementById("response-text");
+                responseText.innerText = randomResponse;
+                responseText.style.display = "block";
+
+                const synth = window.speechSynthesis;
+                const utterance = new SpeechSynthesisUtterance(randomResponse);
+                utterance.lang = "id-ID";
+                synth.speak(utterance);
+            }
+        });
+
+        // --- FUNCTIONALITIES ---
+        let audioBlob = null;
+
+        function useKeyboard() {
+            const output = document.getElementById("output");
+            output.innerHTML = "Anda sedang mengetik di keyboard! Ketik sesuatu di form sapaan.";
+        }
+
+        function useMic() {
+            const output = document.getElementById("output");
+            output.innerHTML = "Mengaktifkan mikrofon... 🎤";
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    output.innerHTML = "Mikrofon aktif! Berbicara selama 5 detik.";
+                    const recorder = new MediaRecorder(stream);
+                    const audioChunks = [];
+                    recorder.ondataavailable = event => audioChunks.push(event.data);
+                    recorder.onstop = () => {
+                        audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+                        output.innerHTML = "Rekaman selesai! Suara siap diputar.";
+                    };
+                    recorder.start();
+                    setTimeout(() => recorder.stop(), 5000);
+                })
+                .catch(err => {
+                    output.innerHTML = `Gagal mengakses mikrofon: ${err.message}`;
+                });
+        }
+
+        function useSpeaker() {
+            const output = document.getElementById("output");
+            if (audioBlob) {
+                output.innerHTML = "Memutar suara di speaker... 🔊";
+                const audio = new Audio(URL.createObjectURL(audioBlob));
+                audio.play().catch(err => {
+                    output.innerHTML = `Error saat memutar suara: ${err.message}`;
+                });
+            } else {
+                output.innerHTML = "Belum ada rekaman suara. Rekam dulu dengan tombol 🎤!";
+            }
+        }
+
+        function useCamera() {
+            const output = document.getElementById("output");
+            output.innerHTML = "Mengaktifkan kamera... 📸";
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    output.innerHTML = "Kamera aktif! Ambil foto.";
+                    const video = document.createElement("video");
+                    video.srcObject = stream;
+                    video.autoplay = true;
+                    document.body.appendChild(video);
+                })
+                .catch(err => {
+                    output.innerHTML = `Gagal mengakses kamera: ${err.message}`;
+                });
+        }
+
+        function useMouse() {
+            const output = document.getElementById("output");
+            output.innerHTML = "Klik dimana saja untuk memindahkan mouse animasi! 🐭";
+            const mouseImage = document.createElement("img");
+            mouseImage.src = "https://i.giphy.com/media/jeg7qod72KSd6wvi07/giphy.gif";
+            mouseImage.classList.add("lucy-mouse");
+            document.body.appendChild(mouseImage);
+            window.addEventListener("mousemove", event => {
+                mouseImage.style.transform = `translate(${event.clientX}px, ${event.clientY}px)`;
+            });
+        }
+    </script>
+</body>
+</html>
